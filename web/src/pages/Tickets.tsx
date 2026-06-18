@@ -85,23 +85,29 @@ export default function Tickets() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/tickets', { params: { page, pageSize, keyword, status, priority, type } });
-      const rows = res.data?.rows || [];
+      const [listRes, summaryRes] = await Promise.all([
+        api.get('/tickets', { params: { page, pageSize, keyword, status, priority, type } }),
+        api.get('/tickets/summary'),
+      ]);
+      const rows = Array.isArray(listRes.data?.rows) ? listRes.data.rows : [];
 
-      // 计算统计数据
-      const today = dayjs().startOf('day');
-      const aiResolvedTickets = rows.filter((t: any) => t.aiProcessed);
-      const todayResolved = rows.filter((t: any) =>
-        t.status === 'resolved' && dayjs(t.resolvedAt || t.updatedAt).isAfter(today)
-      );
+      // 从全库 summary 接口统计（而不是从当前分页数据里算）
+      const byStatus: Record<string, number> = {};
+      const summaryData = summaryRes?.data;
+      if (Array.isArray(summaryData?.byStatus)) {
+        summaryData.byStatus.forEach((s: any) => {
+          const key = s.name || s.status || '';
+          byStatus[key] = Number(s.count) || 0;
+        });
+      }
 
       setStats({
-        total: res.data?.total || 0,
-        open: rows.filter((t: any) => t.status === 'open').length,
-        processing: rows.filter((t: any) => ['assigned', 'processing', 'waiting'].includes(t.status)).length,
-        resolved: rows.filter((t: any) => t.status === 'resolved').length,
-        aiResolved: aiResolvedTickets.length,
-        closed: rows.filter((t: any) => t.status === 'closed').length,
+        total: Number(listRes.data?.total) || 0,
+        open: byStatus.open || 0,
+        processing: (byStatus.assigned || 0) + (byStatus.processing || 0) + (byStatus.waiting || 0),
+        resolved: byStatus.resolved || 0,
+        aiResolved: byStatus.ai_resolved || 0,
+        closed: byStatus.closed || 0,
       });
 
       // 为每个工单添加 AI 处理状态标记
@@ -111,12 +117,12 @@ export default function Tickets() {
       }));
 
       setData(rowsWithAiStatus);
-      setTotal(res.data?.total || 0);
+      setTotal(Number(listRes.data?.total) || 0);
     } finally { setLoading(false); }
   }, [page, pageSize, keyword, status, priority, type]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { api.get('/users/agents/list').then(r => setUsers(r.data || [])); }, []);
+  useEffect(() => { api.get('/users/agents/list').then(r => setUsers(Array.isArray(r.data) ? r.data : Array.isArray(r.data?.items) ? r.data.items : Array.isArray(r.data?.users) ? r.data.users : [])); }, []);
 
   const showDetail = async (id: number) => {
     try {
@@ -498,11 +504,11 @@ export default function Tickets() {
           <div style={{ textAlign: 'center', padding: 40 }}>
             <Spin size="large" description="加载中..." />
           </div>
-        ) : data.length === 0 ? (
+        ) : (Array.isArray(data) && data.length === 0) ? (
           <Empty description="暂无工单" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <div>
-            {data.map(ticket => (
+            {(Array.isArray(data) ? data : []).map(ticket => (
               <TicketCard key={ticket.id} ticket={ticket} />
             ))}
             {/* 分页 */}
@@ -607,7 +613,7 @@ export default function Tickets() {
                     </Tag>
                   </Col>
                 </Row>
-                {aiResult.analysis?.keywords?.length > 0 && (
+                {(Array.isArray(aiResult.analysis?.keywords) && aiResult.analysis.keywords.length > 0) && (
                   <div style={{ marginTop: 8 }}>
                     <Text type="secondary">🏷 关键词：</Text>
                     <Space wrap>
@@ -739,7 +745,7 @@ export default function Tickets() {
               <Timeline
                 items={[
                   { color: 'blue', children: `工单创建 - ${dayjs(detail.createdAt).format('YYYY-MM-DD HH:mm')}` },
-                  ...(detail.comments || []).map((c: any) => ({
+                  ...(Array.isArray(detail.comments) ? detail.comments : []).map((c: any) => ({
                     color: 'gray',
                     children: `${c.author?.realName || '系统'} - ${dayjs(c.createdAt).format('YYYY-MM-DD HH:mm')}`,
                   })),
@@ -825,7 +831,7 @@ export default function Tickets() {
           <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f', borderRadius: 8 }}>
             <Text strong style={{ color: '#52c41a' }}>💡 AI处理建议：</Text>
             <ul style={{ margin: '8px 0 0 18px', padding: 0 }}>
-              {(aiSuggest.suggestedActions || []).map((s: string, i: number) => (
+              {(Array.isArray(aiSuggest.suggestedActions) ? aiSuggest.suggestedActions : []).map((s: string, i: number) => (
                 <li key={i} style={{ marginBottom: 4 }}>{s}</li>
               ))}
             </ul>
@@ -847,7 +853,7 @@ export default function Tickets() {
         <Form form={assignForm} layout="vertical" onFinish={handleAssign}>
           <Form.Item name="assignedTo" label="选择坐席" rules={[{ required: true }]}>
             <Select placeholder="请选择坐席" showSearch optionFilterProp="children">
-              {users.map((u: any) => (
+              {(Array.isArray(users) ? users : []).map((u: any) => (
                 <Option key={u.id} value={u.id}>
                   <Space>
                     <Avatar size="small" icon={<UserOutlined />} />

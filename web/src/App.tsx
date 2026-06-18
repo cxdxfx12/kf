@@ -5,6 +5,7 @@ import {
   DashboardOutlined, ProfileOutlined, CustomerServiceOutlined,
   PhoneOutlined, TeamOutlined, SettingOutlined, UserOutlined,
   LogoutOutlined, BellOutlined, BarChartOutlined, LockOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import { useAuth } from './store/auth';
 import api from './utils/api';
@@ -20,6 +21,7 @@ import Users from './pages/Users';
 import SoftPhone from './components/SoftPhone';
 import AppFooter from './components/AppFooter';
 import KnowledgeFloatingBot from './components/KnowledgeFloatingBot';
+import KnowledgeAssistant from './components/KnowledgeAssistant';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
@@ -32,6 +34,8 @@ function MainLayout() {
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordForm] = Form.useForm();
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [ticketBadge, setTicketBadge] = useState(0);
+  const [notificationBadge, setNotificationBadge] = useState(0);
 
   const handleChangePassword = async (values: any) => {
     setPasswordLoading(true);
@@ -41,7 +45,7 @@ function MainLayout() {
       setPasswordModalOpen(false);
       passwordForm.resetFields();
       logout();
-      navigate('/kf/login');
+      navigate('/login');
     } catch (err: any) {
       message.error(err.response?.data?.error || '修改失败');
     } finally {
@@ -50,14 +54,15 @@ function MainLayout() {
   };
 
   const menuItems = [
-    { key: '/kf/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-    { key: '/kf/orders', icon: <ProfileOutlined />, label: '订单管理' },
-    { key: '/kf/tickets', icon: <CustomerServiceOutlined />, label: '工单中心', badge: 3 },
-    { key: '/kf/calls', icon: <PhoneOutlined />, label: '通话记录' },
-    { key: '/kf/customers', icon: <TeamOutlined />, label: '客户档案' },
-    { key: '/kf/users', icon: <UserOutlined />, label: '坐席管理', roles: ['admin', 'manager'] },
-    { key: '/kf/reports', icon: <BarChartOutlined />, label: '统计报表' },
-    { key: '/kf/settings', icon: <SettingOutlined />, label: '系统设置', roles: ['admin'] },
+    { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
+    { key: '/orders', icon: <ProfileOutlined />, label: '订单管理' },
+    { key: '/tickets', icon: <CustomerServiceOutlined />, label: '工单中心', badge: ticketBadge },
+    { key: '/calls', icon: <PhoneOutlined />, label: '通话记录' },
+    { key: '/customers', icon: <TeamOutlined />, label: '客户档案' },
+    { key: '/knowledge', icon: <BookOutlined />, label: '客服知识库' },
+    { key: '/users', icon: <UserOutlined />, label: '坐席管理', roles: ['admin', 'manager'] },
+    { key: '/reports', icon: <BarChartOutlined />, label: '统计报表' },
+    { key: '/settings', icon: <SettingOutlined />, label: '系统设置', roles: ['admin'] },
   ];
 
   const visibleItems = menuItems.filter(i => !i.roles || (user && i.roles.includes(user.role)));
@@ -65,6 +70,23 @@ function MainLayout() {
   useEffect(() => {
     if (user) {
       console.log('[App] User loaded:', user.realName, user.role);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchBadges = async () => {
+      try {
+        const res = await api.get('/notifications/badge');
+        if (res.data) {
+          setTicketBadge(res.data.ticketBadge || 0);
+          setNotificationBadge(res.data.notificationBadge || 0);
+        }
+      } catch (err) {
+        console.error('[App] Fetch badges failed:', err);
+      }
+    };
+    if (user) {
+      fetchBadges();
     }
   }, [user]);
 
@@ -122,17 +144,17 @@ function MainLayout() {
             <Text strong style={{ fontSize: 16, color: '#262626' }}>🤖 智能客服系统</Text>
           </Space>
           <Space size="large">
-            <Badge count={5}><BellOutlined style={{ fontSize: 18 }} /></Badge>
+            <Badge count={notificationBadge}><BellOutlined style={{ fontSize: 18 }} /></Badge>
             <Dropdown menu={{
               items: [
                 { key: 'profile', icon: <UserOutlined />, label: `${user?.realName}（${user?.role === 'admin' ? '管理员' : user?.role === 'manager' ? '主管' : '坐席'}）`, disabled: true },
                 { type: 'divider' },
                 { key: 'changePassword', icon: <LockOutlined />, label: '修改密码', onClick: () => setPasswordModalOpen(true) },
-                { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: () => { logout(); navigate('/kf/login'); } },
+                { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: () => { logout(); navigate('/login'); } },
               ]
             }}>
               <Space>
-                <Avatar src="/monkey-logo.svg" />
+                <Avatar src={`${import.meta.env.BASE_URL}monkey-logo.svg`} />
                 <span>{user?.realName}</span>
               </Space>
             </Dropdown>
@@ -140,15 +162,16 @@ function MainLayout() {
         </Header>
         <Content className="app-content">
           <Routes>
-            <Route path="/kf/dashboard" element={<Dashboard />} />
-            <Route path="/kf/orders" element={<Orders />} />
-            <Route path="/kf/tickets" element={<Tickets />} />
-            <Route path="/kf/calls" element={<Calls />} />
-            <Route path="/kf/customers" element={<Customers />} />
-            <Route path="/kf/users" element={<Users />} />
-            <Route path="/kf/reports" element={<Reports />} />
-            <Route path="/kf/settings" element={<Settings />} />
-            <Route path="/kf/*" element={<Navigate to="/kf/dashboard" />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/tickets" element={<Tickets />} />
+            <Route path="/calls" element={<Calls />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/knowledge" element={<KnowledgeAssistant />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </Content>
         <Footer style={{ padding: 0, background: '#fafafa' }}>
@@ -214,10 +237,9 @@ export default function App() {
   const { token } = useAuth();
   return (
     <Routes>
-      <Route path="/kf/login" element={<Login />} />
-      <Route path="/kf/*" element={token ? <MainLayout /> : <Navigate to="/kf/login" />} />
-      <Route path="/" element={<Navigate to="/kf/dashboard" />} />
-      <Route path="*" element={<Navigate to="/kf/dashboard" />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/*" element={token ? <MainLayout /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 }

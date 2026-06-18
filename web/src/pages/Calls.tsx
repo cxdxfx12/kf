@@ -81,15 +81,13 @@ export default function Calls() {
       const rows = listRes.data?.rows || [];
       const statsData = statsRes.data || {};
 
-      const totalDuration = rows.reduce((sum: number, c: any) => sum + (c.duration || 0), 0);
-
       setStats({
-        total: statsData.total || listRes.data?.total || 0,
-        inbound: statsData.inbound || rows.filter((c: any) => c.direction === 'inbound').length,
-        outbound: statsData.outbound || rows.filter((c: any) => c.direction === 'outbound').length,
-        connected: statsData.connected || rows.filter((c: any) => c.status === 'connected').length,
-        missed: statsData.missed || rows.filter((c: any) => c.status === 'missed' || c.status === 'failed').length,
-        totalDuration,
+        total: statsData.total || 0,
+        inbound: statsData.inbound || 0,
+        outbound: statsData.outbound || 0,
+        connected: statsData.connected || 0,
+        missed: statsData.missed || 0,
+        totalDuration: statsData.totalDuration || 0,
       });
 
       setData(rows);
@@ -372,7 +370,7 @@ export default function Calls() {
             value={agentFilter || undefined}
             onChange={v => { setAgentFilter(v); setPage(1); }}
           >
-            {users.map((u: any) => (
+            {(Array.isArray(users) ? users : []).map((u: any) => (
               <Option key={u.id} value={u.id}>
                 <Space>
                   <Avatar size="small" icon={<UserOutlined />} />
@@ -398,11 +396,11 @@ export default function Calls() {
           <div style={{ textAlign: 'center', padding: 40 }}>
             <Spin size="large" description="加载中..." />
           </div>
-        ) : data.length === 0 ? (
+        ) : (Array.isArray(data) && data.length === 0) ? (
           <Empty description="暂无通话记录" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <div>
-            {data.map(call => (
+            {(Array.isArray(data) ? data : []).map(call => (
               <CallCard key={call.id} call={call} />
             ))}
             <div style={{ textAlign: 'center', marginTop: 16 }}>

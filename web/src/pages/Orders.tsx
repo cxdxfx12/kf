@@ -61,20 +61,27 @@ export default function Orders() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/orders', { params: { page, pageSize, keyword, status, courier } });
-      const rows = res.data?.rows || [];
+      const [listRes, summaryRes] = await Promise.all([
+        api.get('/orders', { params: { page, pageSize, keyword, status, courier } }),
+        api.get('/orders/summary'),
+      ]);
+      const rows = listRes.data?.rows || [];
+
+      // 从全库 summary 接口统计（而不是从当前分页数据里算）
+      const byStatus: Record<string, number> = {};
+      (summaryRes.data?.byStatus || []).forEach((s: any) => { byStatus[s.status] = Number(s.count) || 0; });
 
       setStats({
-        total: res.data?.total || 0,
-        pending: rows.filter((o: any) => o.status === 'pending' || o.status === 'collected').length,
-        transit: rows.filter((o: any) => o.status === 'transit').length,
-        delivery: rows.filter((o: any) => o.status === 'delivery').length,
-        delivered: rows.filter((o: any) => o.status === 'delivered').length,
-        exception: rows.filter((o: any) => o.status === 'exception' || o.status === 'returned').length,
+        total: listRes.data?.total || 0,
+        pending: (byStatus.pending || 0) + (byStatus.collected || 0),
+        transit: byStatus.transit || 0,
+        delivery: byStatus.delivery || 0,
+        delivered: byStatus.delivered || 0,
+        exception: (byStatus.exception || 0) + (byStatus.returned || 0),
       });
 
       setData(rows);
-      setTotal(res.data?.total || 0);
+      setTotal(listRes.data?.total || 0);
     } finally { setLoading(false); }
   }, [page, pageSize, keyword, status, courier]);
 
@@ -352,11 +359,11 @@ export default function Orders() {
           <div style={{ textAlign: 'center', padding: 40 }}>
             <Spin size="large" description="加载中..." />
           </div>
-        ) : data.length === 0 ? (
+        ) : (Array.isArray(data) && data.length === 0) ? (
           <Empty description="暂无订单" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <div>
-            {data.map(order => (
+            {(Array.isArray(data) ? data : []).map(order => (
               <OrderCard key={order.id} order={order} />
             ))}
             {/* 分页 */}
@@ -449,7 +456,7 @@ export default function Orders() {
             {/* 物流轨迹 */}
             <Card size="small" title="🚚 物流轨迹" style={{ borderRadius: 8 }}>
               <Timeline
-                items={(detail.tracking || []).sort((a: any, b: any) => dayjs(b.time).valueOf() - dayjs(a.time).valueOf()).map((t: any) => ({
+                items={(Array.isArray(detail.tracking) ? detail.tracking : []).sort((a: any, b: any) => dayjs(b.time).valueOf() - dayjs(a.time).valueOf()).map((t: any) => ({
                   color: statusConfig[t.status]?.color || 'blue',
                   children: (
                     <div>

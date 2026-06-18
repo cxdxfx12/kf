@@ -56,8 +56,8 @@ export default function Settings() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState<any>(null);
 
-  const callCenterItems = providers.callCenter || [];
-  const aiItems = providers.ai || [];
+  const callCenterItems = Array.isArray(providers.callCenter) ? providers.callCenter : [];
+  const aiItems = Array.isArray(providers.ai) ? providers.ai : [];
 
   // 音色管理函数（必须在 useEffect 之前定义）
   const loadVoiceData = async () => {
@@ -123,19 +123,30 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    Promise.all([
-      api.get('/configs/providers').catch(() => ({ data: { callCenter: [], ai: [], couriers: [], database: {} } })),
-      api.get('/configs').catch(() => []),
-      api.get('/couriers/list').catch(() => ({ data: [] })),
-    ]).then(([provRes, cfgRes, curRes]) => {
+    const loadAllData = async () => {
+      const [provRes, cfgRes, curRes, voiceConfigRes, voiceProjectsRes, voiceModelsRes, voiceDeploymentsRes] = await Promise.all([
+        api.get('/configs/providers').catch(() => ({ data: { callCenter: [], ai: [], couriers: [], database: {} } })),
+        api.get('/configs').catch(() => []),
+        api.get('/couriers/list').catch(() => ({ data: [] })),
+        api.get('/voice/config').catch(() => ({ data: {} })),
+        api.get('/voice/projects').catch(() => ({ data: [] })),
+        api.get('/voice/models').catch(() => ({ data: [] })),
+        api.get('/voice/deployments').catch(() => ({ data: [] })),
+      ]);
+
+      const voiceConfigData = voiceConfigRes.data || {};
+      setVoiceConfig(voiceConfigData);
+      setVoiceProjects(voiceProjectsRes.data?.projects || []);
+      setVoiceModels(voiceModelsRes.data?.models || []);
+      setVoiceDeployments(voiceDeploymentsRes.data?.deployments || []);
+
       setProviders(provRes.data || { callCenter: [], ai: [], couriers: [], database: {} });
       setCouriers(curRes.data || []);
-      const items = cfgRes.data || [];
+      const items = Array.isArray(cfgRes.data) ? cfgRes.data : [];
       const obj: any = {};
       items.forEach((c: any) => { obj[c.key] = c.value; });
       form.setFieldsValue(obj);
 
-      // 更新统计
       const prov = provRes.data || {};
       const callItems = prov.callCenter || [];
       const aiItems = prov.ai || [];
@@ -145,11 +156,11 @@ export default function Settings() {
         callCenterConfigured: callItems.filter((p: any) => p.available).length,
         aiConfigured: aiItems.filter((p: any) => p.available).length,
         courierConfigured: courierItems.filter((c: any) => c.available).length,
-        voiceEnabled: voiceConfig.isEnabled || false,
+        voiceEnabled: voiceConfigData.isEnabled || false,
         dbConnected: !!(prov.database && prov.database.dialect),
       });
-    });
-    loadVoiceData();
+    };
+    loadAllData();
   }, [form]);
 
   const handleSave = async (values: any) => {
@@ -478,14 +489,14 @@ export default function Settings() {
               <Divider style={{ margin: '12px 0' }} />
               <Space wrap>
                 <Text type="secondary">服务状态：</Text>
-                <Tag color={providers.couriers?.some((c: any) => c.id === 'kuaidibird') ? 'success' : 'default'}>
-                  快递鸟 {providers.couriers?.some((c: any) => c.id === 'kuaidibird') ? '已配置' : '未配置'}
+                <Tag color={providers.couriers?.find((c: any) => c.id === 'kuaidibird')?.available ? 'success' : 'default'}>
+                  快递鸟 {providers.couriers?.find((c: any) => c.id === 'kuaidibird')?.available ? '已配置' : '未配置'}
                 </Tag>
-                <Tag color={providers.couriers?.some((c: any) => c.id === 'cainiao') ? 'success' : 'default'}>
-                  菜鸟 {providers.couriers?.some((c: any) => c.id === 'cainiao') ? '已配置' : '未配置'}
+                <Tag color={providers.couriers?.find((c: any) => c.id === 'cainiao')?.available ? 'success' : 'default'}>
+                  菜鸟 {providers.couriers?.find((c: any) => c.id === 'cainiao')?.available ? '已配置' : '未配置'}
                 </Tag>
-                <Tag color={providers.couriers?.some((c: any) => c.id === 'sto') ? 'success' : 'default'}>
-                  申通 {providers.couriers?.some((c: any) => c.id === 'sto') ? '已配置' : '未配置'}
+                <Tag color={providers.couriers?.find((c: any) => c.id === 'sto')?.available ? 'success' : 'default'}>
+                  申通 {providers.couriers?.find((c: any) => c.id === 'sto')?.available ? '已配置' : '未配置'}
                 </Tag>
                 <Tag color="blue">
                   <DatabaseOutlined /> {providers.database?.dialect} · {providers.database?.host}/{providers.database?.name}

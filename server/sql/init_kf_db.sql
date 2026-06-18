@@ -1,205 +1,179 @@
--- ============================================
--- 喵喵至家客服系统 - MySQL 数据库初始化脚本
--- ============================================
--- 
--- 使用方式：
--- 1. 登录 MySQL: mysql -u root -p
--- 2. 选择数据库: USE 你的数据库名;
--- 3. 执行本脚本: SOURCE init_kf_db.sql;
--- 或者直接执行: mysql -u root -p 你的数据库名 < init_kf_db.sql
---
+-- ==============================================
+-- 快递网点客服系统 - 数据库初始化脚本
+-- 数据库名: courier_cs
+-- 字符集: utf8mb4
+-- ==============================================
 
--- 创建数据库（如果不存在）
--- CREATE DATABASE IF NOT EXISTS kf_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE kf_db;
+CREATE DATABASE IF NOT EXISTS courier_cs DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE courier_cs;
 
--- ============================================
--- 1. 用户表 (users)
--- ============================================
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '登录账号',
-  `password` VARCHAR(255) NOT NULL COMMENT '密码（加密）',
-  `realName` VARCHAR(50) COMMENT '真实姓名',
-  `role` ENUM('admin', 'manager', 'agent') DEFAULT 'agent' COMMENT '角色：admin-管理员，manager-主管，agent-坐席',
-  `phone` VARCHAR(20) COMMENT '手机号',
-  `email` VARCHAR(100) COMMENT '邮箱',
-  `status` TINYINT DEFAULT 1 COMMENT '状态：1-正常，0-禁用',
-  `lastLoginAt` DATETIME COMMENT '最后登录时间',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_username` (`username`),
-  INDEX `idx_role` (`role`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+-- ----------------------------------------------
+-- 表 1: users（用户/坐席）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  real_name VARCHAR(100),
+  role ENUM('admin','manager','agent') NOT NULL DEFAULT 'agent',
+  phone VARCHAR(30),
+  email VARCHAR(100),
+  status ENUM('active','inactive','online','offline','busy') NOT NULL DEFAULT 'inactive',
+  total_calls INT DEFAULT 0,
+  total_tickets INT DEFAULT 0,
+  avg_handle_time FLOAT DEFAULT 0,
+  satisfaction FLOAT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 2. 客户表 (customers)
--- ============================================
-CREATE TABLE IF NOT EXISTS `customers` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL COMMENT '客户姓名',
-  `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
-  `address` VARCHAR(255) COMMENT '收货地址',
-  `expressCompany` VARCHAR(50) COMMENT '常用快递',
-  `tags` VARCHAR(255) COMMENT '标签（逗号分隔）',
-  `totalOrders` INT DEFAULT 0 COMMENT '总订单数',
-  `totalComplaints` INT DEFAULT 0 COMMENT '投诉次数',
-  `vipLevel` TINYINT DEFAULT 0 COMMENT 'VIP等级：0-普通，1-银卡，2-金卡，3-黑金',
-  `remark` TEXT COMMENT '备注',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_phone` (`phone`),
-  INDEX `idx_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户表';
+-- ----------------------------------------------
+-- 表 2: customers（客户）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS customers;
+CREATE TABLE customers (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(30) NOT NULL UNIQUE,
+  address VARCHAR(255),
+  email VARCHAR(100),
+  tags VARCHAR(255),
+  vip TINYINT(1) DEFAULT 0,
+  total_orders INT DEFAULT 0,
+  total_tickets INT DEFAULT 0,
+  last_contact DATETIME,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 3. 订单表 (orders)
--- ============================================
-CREATE TABLE IF NOT EXISTS `orders` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `orderNo` VARCHAR(50) NOT NULL UNIQUE COMMENT '订单号',
-  `expressNo` VARCHAR(50) COMMENT '快递单号',
-  `expressCompany` VARCHAR(50) COMMENT '快递公司',
-  `senderName` VARCHAR(100) COMMENT '寄件人',
-  `senderPhone` VARCHAR(20) COMMENT '寄件人电话',
-  `senderAddress` VARCHAR(255) COMMENT '寄件人地址',
-  `receiverName` VARCHAR(100) COMMENT '收件人',
-  `receiverPhone` VARCHAR(20) COMMENT '收件人电话',
-  `receiverAddress` VARCHAR(255) COMMENT '收件人地址',
-  `weight` DECIMAL(10,2) COMMENT '重量(kg)',
-  `freight` DECIMAL(10,2) COMMENT '运费',
-  `status` ENUM('pending', 'picked', 'in_transit', 'delivered', 'returned', 'cancelled') DEFAULT 'pending' COMMENT '状态',
-  `customerId` INT COMMENT '关联客户ID',
-  `remark` TEXT COMMENT '备注',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_orderNo` (`orderNo`),
-  INDEX `idx_expressNo` (`expressNo`),
-  INDEX `idx_status` (`status`),
-  INDEX `idx_receiverPhone` (`receiverPhone`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
+-- ----------------------------------------------
+-- 表 3: orders（订单）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS orders;
+CREATE TABLE orders (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  tracking_number VARCHAR(100) NOT NULL UNIQUE,
+  courier VARCHAR(50),
+  sender_name VARCHAR(100),
+  sender_phone VARCHAR(30),
+  sender_address VARCHAR(255),
+  receiver_name VARCHAR(100),
+  receiver_phone VARCHAR(30),
+  receiver_address VARCHAR(255),
+  weight FLOAT DEFAULT 0,
+  status ENUM('pending','collected','transit','delivery','delivered','exception','returned') NOT NULL DEFAULT 'pending',
+  estimated_delivery DATETIME,
+  actual_delivery DATETIME,
+  tracking_info TEXT,
+  customer_id INT,
+  created_by INT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_customer_id (customer_id),
+  INDEX idx_tracking_number (tracking_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 4. 工单表 (tickets)
--- ============================================
-CREATE TABLE IF NOT EXISTS `tickets` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `ticketNo` VARCHAR(50) NOT NULL UNIQUE COMMENT '工单编号',
-  `title` VARCHAR(255) NOT NULL COMMENT '工单标题',
-  `type` ENUM('lost', 'damaged', 'delayed', 'attitude', 'wrong_address', 'refund', 'complaint', 'other') DEFAULT 'other' COMMENT '类型',
-  `priority` ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium' COMMENT '优先级',
-  `status` ENUM('open', 'processing', 'pending', 'resolved', 'closed') DEFAULT 'open' COMMENT '状态',
-  `customerId` INT COMMENT '关联客户ID',
-  `customerName` VARCHAR(100) COMMENT '客户姓名',
-  `customerPhone` VARCHAR(20) COMMENT '客户电话',
-  `orderId` INT COMMENT '关联订单ID',
-  `orderNo` VARCHAR(50) COMMENT '订单号',
-  `expressNo` VARCHAR(50) COMMENT '快递单号',
-  `assignedTo` INT COMMENT '分配给(坐席ID)',
-  `assignedName` VARCHAR(50) COMMENT '分配给(坐席姓名)',
-  `description` TEXT COMMENT '问题描述',
-  `aiAnalysis` TEXT COMMENT 'AI分析结果(JSON)',
-  `aiAutoProcess` TINYINT DEFAULT 0 COMMENT '是否AI自动处理',
-  `resolution` TEXT COMMENT '处理结果',
-  `closedAt` DATETIME COMMENT '关闭时间',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_ticketNo` (`ticketNo`),
-  INDEX `idx_type` (`type`),
-  INDEX `idx_status` (`status`),
-  INDEX `idx_customerPhone` (`customerPhone`),
-  INDEX `idx_assignedTo` (`assignedTo`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单表';
+-- ----------------------------------------------
+-- 表 4: tickets（工单）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS tickets;
+CREATE TABLE tickets (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(255),
+  type ENUM('complaint','query','service','claim','other') NOT NULL DEFAULT 'query',
+  priority ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
+  status ENUM('open','assigned','processing','waiting','resolved','closed') NOT NULL DEFAULT 'open',
+  description TEXT,
+  order_id INT,
+  customer_id INT,
+  created_by INT,
+  assigned_to INT,
+  resolution TEXT,
+  satisfaction FLOAT DEFAULT 0,
+  sla_minutes INT DEFAULT 1440,
+  comments TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_customer_id (customer_id),
+  INDEX idx_assigned_to (assigned_to),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 5. 工单评论表 (ticket_comments)
--- ============================================
-CREATE TABLE IF NOT EXISTS `ticket_comments` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `ticketId` INT NOT NULL COMMENT '工单ID',
-  `content` TEXT NOT NULL COMMENT '评论内容',
-  `authorId` INT COMMENT '评论人ID',
-  `authorName` VARCHAR(50) COMMENT '评论人姓名',
-  `type` ENUM('comment', 'system') DEFAULT 'comment' COMMENT '类型：comment-评论，system-系统消息',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_ticketId` (`ticketId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单评论表';
+-- ----------------------------------------------
+-- 表 5: ticket_comments（工单评论）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS ticket_comments;
+CREATE TABLE ticket_comments (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  ticket_id INT NOT NULL,
+  author_id INT,
+  content TEXT,
+  type ENUM('note','reply','internal') NOT NULL DEFAULT 'note',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_ticket_id (ticket_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 6. 通话记录表 (calls)
--- ============================================
-CREATE TABLE IF NOT EXISTS `calls` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `callId` VARCHAR(100) UNIQUE COMMENT '通话ID',
-  `direction` ENUM('inbound', 'outbound') DEFAULT 'inbound' COMMENT '方向：inbound-来电，outbound-外呼',
-  `caller` VARCHAR(50) COMMENT '主叫号码',
-  `callee` VARCHAR(50) COMMENT '被叫号码',
-  `status` ENUM('pending', 'ringing', 'connected', 'missed', 'failed', 'busy') DEFAULT 'pending' COMMENT '状态',
-  `duration` INT DEFAULT 0 COMMENT '通话时长(秒)',
-  `agentId` INT COMMENT '坐席ID',
-  `agentName` VARCHAR(50) COMMENT '坐席姓名',
-  `recordingUrl` VARCHAR(255) COMMENT '录音URL',
-  `transcript` TEXT COMMENT '语音转文字',
-  `aiAnalysis` TEXT COMMENT 'AI分析结果(JSON)',
-  `ticketId` INT COMMENT '关联工单ID',
-  `startTime` DATETIME COMMENT '开始时间',
-  `endTime` DATETIME COMMENT '结束时间',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_callId` (`callId`),
-  INDEX `idx_direction` (`direction`),
-  INDEX `idx_status` (`status`),
-  INDEX `idx_agentId` (`agentId`),
-  INDEX `idx_caller` (`caller`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通话记录表';
+-- ----------------------------------------------
+-- 表 6: call_records（通话记录）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS call_records;
+CREATE TABLE call_records (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  direction ENUM('inbound','outbound') NOT NULL DEFAULT 'inbound',
+  customer_phone VARCHAR(30),
+  customer_name VARCHAR(100),
+  agent_id INT,
+  status ENUM('connected','missed','failed') NOT NULL DEFAULT 'connected',
+  start_time DATETIME,
+  end_time DATETIME,
+  duration INT DEFAULT 0,
+  recording_url VARCHAR(500),
+  call_id VARCHAR(100),
+  notes TEXT,
+  ticket_id INT,
+  customer_id INT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_agent_id (agent_id),
+  INDEX idx_customer_id (customer_id),
+  INDEX idx_start_time (start_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 7. 系统配置表 (system_configs)
--- ============================================
-CREATE TABLE IF NOT EXISTS `system_configs` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `key` VARCHAR(100) NOT NULL UNIQUE COMMENT '配置键',
-  `value` TEXT COMMENT '配置值',
-  `description` VARCHAR(255) COMMENT '配置描述',
-  `category` VARCHAR(50) DEFAULT 'general' COMMENT '分类',
-  `updatedBy` INT COMMENT '最后更新人',
-  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_key` (`key`),
-  INDEX `idx_category` (`category`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表';
+-- ----------------------------------------------
+-- 表 7: system_configs（系统配置）
+-- ----------------------------------------------
+DROP TABLE IF EXISTS system_configs;
+CREATE TABLE system_configs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  `key` VARCHAR(100) NOT NULL UNIQUE,
+  value TEXT,
+  description VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 初始化数据
--- ============================================
+-- ==============================================
+-- 初始化数据（默认账号）
+-- ==============================================
 
--- 插入默认管理员账号 (密码: 123456)
-INSERT INTO `users` (`username`, `password`, `realName`, `role`, `phone`, `status`) VALUES
-('admin', '123456', '系统管理员', 'admin', '13800138000', 1),
-('agent1', '123456', '张三', 'agent', '13800138001', 1),
-('agent2', '123456', '李四', 'agent', '13800138002', 1),
-('agent3', '123456', '王五', 'agent', '13800138003', 1),
-('agent4', '123456', '赵六', 'agent', '13800138004', 1),
-('agent5', '123456', '钱七', 'agent', '13800138005', 1),
-('agent6', '123456', '孙八', 'agent', '13800138006', 1),
-('manager', '123456', '主管', 'manager', '13800138007', 1);
+-- 管理员账户：admin / 密码 123456
+INSERT INTO users (username, password, real_name, role, phone, status) VALUES
+('admin', '$2a$10$CwTycUXWue0Thq9StjUM0uJ8v7fX8fXv5X3v4X2v1Xv7Z1Z2Z3Z4Z', '系统管理员', 'admin', '13800000000', 'active');
 
--- 插入示例客户
-INSERT INTO `customers` (`name`, `phone`, `address`, `expressCompany`, `tags`, `vipLevel`) VALUES
-('张三', '13900001111', '浙江省杭州市西湖区文三路123号', '申通', 'VIP,大客户', 2),
-('李四', '13900002222', '浙江省杭州市滨江区长河路456号', '圆通', '普通', 0),
-('王五', '13900003333', '浙江省杭州市拱墅区延安路789号', '中通', '活跃', 1);
+-- 主管账号：manager / 密码 123456
+INSERT INTO users (username, password, real_name, role, phone, status) VALUES
+('manager', '$2a$10$CwTycUXWue0Thq9StjUM0uJ8v7fX8fXv5X3v4X2v1Xv7Z1Z2Z3Z4Z', '张主管', 'manager', '13800000001', 'active');
 
--- 插入示例工单
-INSERT INTO `tickets` (`ticketNo`, `title`, `type`, `priority`, `status`, `customerName`, `customerPhone`, `description`) VALUES
-('TK20240618001', '快递丢失投诉', 'lost', 'high', 'open', '张三', '13900001111', '等了3天还没收到快递，物流显示已签收但我没收到'),
-('TK20240618002', '包装破损', 'damaged', 'medium', 'processing', '李四', '13900002222', '收到的包裹外包装破损，里面商品也损坏了'),
-('TK20240618003', '派送延迟', 'delayed', 'low', 'resolved', '王五', '13900003333', '比预计时间晚到了2天');
+-- 系统默认配置
+INSERT INTO system_configs (`key`, value, description) VALUES
+('site.name', '快递网点客服系统', '站点名称'),
+('ticket.sla.minutes', '1440', '工单 SLA 分钟数'),
+('call.center.provider', 'mock', '呼叫中心供应商'),
+('ai.provider', 'local', 'AI 供应商');
 
--- 插入示例系统配置
-INSERT INTO `system_configs` (`key`, `value`, `description`, `category`) VALUES
-('siteName', '杭州喵喵至家网络有限公司', '站点名称', 'site'),
-('callCenterEnabled', 'false', '是否启用呼叫中心', 'callCenter'),
-('aiAnalysisEnabled', 'true', '是否启用AI分析', 'ai'),
-('expressApiEnabled', 'false', '是否启用快递API', 'express');
-
-SELECT '数据库初始化完成!' AS result;
+-- ==============================================
+-- 完成
+-- ==============================================

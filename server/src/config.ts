@@ -1,5 +1,5 @@
 export const config = {
-  port: Number(process.env.PORT) || 3001,
+  port: Number(process.env.PORT) || 3002,
   jwt: { secret: process.env.JWT_SECRET || 'courier-cs-secret-key-2025', expiresIn: '7d' },
   database: {
     dialect: process.env.DB_DIALECT || 'mysql',

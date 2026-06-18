@@ -32,7 +32,7 @@ export default function Dashboard() {
   useEffect(() => { fetchData(); }, []);
 
   const ticketConfig = {
-    data: (stats.ticketByType || []).map((x: any) => ({ type: x.type === 'complaint' ? '投诉' : x.type === 'query' ? '查询' : x.type === 'service' ? '服务' : x.type === 'claim' ? '理赔' : x.type, value: x.count })),
+    data: (Array.isArray(stats.ticketByType) ? stats.ticketByType : []).map((x: any) => ({ type: x.type === 'complaint' ? '投诉' : x.type === 'query' ? '查询' : x.type === 'service' ? '服务' : x.type === 'claim' ? '理赔' : x.type, value: x.count })),
     angleField: 'type',
     colorField: 'type',
     radiusField: 'value',
@@ -41,7 +41,7 @@ export default function Dashboard() {
   };
 
   const callTrendConfig = {
-    data: (stats.callsTrend || []).map((x: any) => ({ date: dayjs(x.day || x.startTime).format('MM-DD'), 通话量: x.count })),
+    data: (Array.isArray(stats.callsTrend) ? stats.callsTrend : []).map((x: any) => ({ date: dayjs(x.day || x.startTime).format('MM-DD'), 通话量: x.count })),
     xField: 'date',
     yField: '通话量',
     label: { position: 'top' },
@@ -71,12 +71,12 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
         <Col xs={24} lg={16}>
           <Card className="page-card" title="📞 近 7 日通话趋势" loading={loading}>
-            {stats.callsTrend?.length > 0 ? <Column {...callTrendConfig} /> : <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8c' }}>暂无数据</div>}
+            {(Array.isArray(stats.callsTrend) && stats.callsTrend.length > 0) ? <Column {...callTrendConfig} /> : <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8c' }}>暂无数据</div>}
           </Card>
         </Col>
         <Col xs={24} lg={8}>
           <Card className="page-card" title="📋 工单类型分布" loading={loading}>
-            {stats.ticketByType?.length > 0 ? <Pie {...ticketConfig} /> : <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8c' }}>暂无数据</div>}
+            {(Array.isArray(stats.ticketByType) && stats.ticketByType.length > 0) ? <Pie {...ticketConfig} /> : <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8c' }}>暂无数据</div>}
           </Card>
         </Col>
       </Row>
@@ -103,7 +103,7 @@ export default function Dashboard() {
           <Card className="page-card" title="👥 坐席绩效排行" loading={loading}>
             <Table
               size="small"
-              dataSource={stats.agents || []}
+              dataSource={Array.isArray(stats.agents) ? stats.agents : []}
               rowKey="id"
               pagination={false}
               columns={[

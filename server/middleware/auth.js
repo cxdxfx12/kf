@@ -15,14 +15,20 @@ function auth(req, res, next) {
 }
 
 function adminAuth(req, res, next) {
-  if (req.user && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
+  if (req.user && req.user.role !== 'admin' && req.user.role !== 'manager') {
     return res.status(403).json({ error: '权限不足' });
   }
   next();
 }
 
 function generateToken(user) {
-  return jwt.sign({ id: user.id, username: user.username, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+  const plain = typeof user.toJSON === 'function' ? user.toJSON() : user;
+  return jwt.sign({
+    id: plain.id,
+    username: plain.username,
+    role: plain.role,
+    name: plain.real_name || plain.realName || plain.name || plain.username,
+  }, JWT_SECRET, { expiresIn: '7d' });
 }
 
 module.exports = { auth, adminAuth, generateToken, JWT_SECRET };
