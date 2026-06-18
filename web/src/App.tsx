@@ -41,7 +41,7 @@ function MainLayout() {
       setPasswordModalOpen(false);
       passwordForm.resetFields();
       logout();
-      navigate('/login');
+      navigate('/kf/login');
     } catch (err: any) {
       message.error(err.response?.data?.error || '修改失败');
     } finally {
@@ -50,14 +50,14 @@ function MainLayout() {
   };
 
   const menuItems = [
-    { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-    { key: '/orders', icon: <ProfileOutlined />, label: '订单管理' },
-    { key: '/tickets', icon: <CustomerServiceOutlined />, label: '工单中心', badge: 3 },
-    { key: '/calls', icon: <PhoneOutlined />, label: '通话记录' },
-    { key: '/customers', icon: <TeamOutlined />, label: '客户档案' },
-    { key: '/users', icon: <UserOutlined />, label: '坐席管理', roles: ['admin', 'manager'] },
-    { key: '/reports', icon: <BarChartOutlined />, label: '统计报表' },
-    { key: '/settings', icon: <SettingOutlined />, label: '系统设置', roles: ['admin'] },
+    { key: '/kf/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
+    { key: '/kf/orders', icon: <ProfileOutlined />, label: '订单管理' },
+    { key: '/kf/tickets', icon: <CustomerServiceOutlined />, label: '工单中心', badge: 3 },
+    { key: '/kf/calls', icon: <PhoneOutlined />, label: '通话记录' },
+    { key: '/kf/customers', icon: <TeamOutlined />, label: '客户档案' },
+    { key: '/kf/users', icon: <UserOutlined />, label: '坐席管理', roles: ['admin', 'manager'] },
+    { key: '/kf/reports', icon: <BarChartOutlined />, label: '统计报表' },
+    { key: '/kf/settings', icon: <SettingOutlined />, label: '系统设置', roles: ['admin'] },
   ];
 
   const visibleItems = menuItems.filter(i => !i.roles || (user && i.roles.includes(user.role)));
@@ -128,7 +128,7 @@ function MainLayout() {
                 { key: 'profile', icon: <UserOutlined />, label: `${user?.realName}（${user?.role === 'admin' ? '管理员' : user?.role === 'manager' ? '主管' : '坐席'}）`, disabled: true },
                 { type: 'divider' },
                 { key: 'changePassword', icon: <LockOutlined />, label: '修改密码', onClick: () => setPasswordModalOpen(true) },
-                { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: () => { logout(); navigate('/login'); } },
+                { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: () => { logout(); navigate('/kf/login'); } },
               ]
             }}>
               <Space>
@@ -140,15 +140,15 @@ function MainLayout() {
         </Header>
         <Content className="app-content">
           <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/tickets" element={<Tickets />} />
-            <Route path="/calls" element={<Calls />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/dashboard" />} />
+            <Route path="/kf/dashboard" element={<Dashboard />} />
+            <Route path="/kf/orders" element={<Orders />} />
+            <Route path="/kf/tickets" element={<Tickets />} />
+            <Route path="/kf/calls" element={<Calls />} />
+            <Route path="/kf/customers" element={<Customers />} />
+            <Route path="/kf/users" element={<Users />} />
+            <Route path="/kf/reports" element={<Reports />} />
+            <Route path="/kf/settings" element={<Settings />} />
+            <Route path="/kf/*" element={<Navigate to="/kf/dashboard" />} />
           </Routes>
         </Content>
         <Footer style={{ padding: 0, background: '#fafafa' }}>
@@ -214,8 +214,10 @@ export default function App() {
   const { token } = useAuth();
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/*" element={token ? <MainLayout /> : <Navigate to="/login" />} />
+      <Route path="/kf/login" element={<Login />} />
+      <Route path="/kf/*" element={token ? <MainLayout /> : <Navigate to="/kf/login" />} />
+      <Route path="/" element={<Navigate to="/kf/dashboard" />} />
+      <Route path="*" element={<Navigate to="/kf/dashboard" />} />
     </Routes>
   );
 }

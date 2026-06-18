@@ -1,0 +1,6 @@
+lcd e:\kf\web\dist
+cd /www/wwwroot
+mkdir -p kf/web
+cd kf/web
+put -r * .
+bye

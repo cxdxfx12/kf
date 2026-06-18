@@ -1,0 +1,82 @@
+# ============================================
+# 喵喵至家客服系统 - Nginx 配置
+# ============================================
+# 
+# 使用方式：
+# 1. 复制以下配置到现有网站的 Nginx 配置文件中
+# 2. 或者保存为 /etc/nginx/sites-available/kf.conf
+# 3. 然后创建软链接: ln -s /etc/nginx/sites-available/kf.conf /etc/nginx/sites-enabled/
+# 4. 重载 Nginx: nginx -t && nginx -s reload
+#
+
+# --------------------------------------------
+# 方式一：子目录方式（推荐）- 在现有网站配置中添加
+# --------------------------------------------
+
+# 在现有的 server {} 块中添加以下配置：
+
+# 客服系统前端静态文件
+location /kf/ {
+    alias /www/wwwroot/kf/web/;
+    try_files $uri $uri/ /kf/index.html;
+}
+
+# 客服系统后端 API 反向代理
+location /kf/api/ {
+    proxy_pass http://127.0.0.1:3000/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_cache_bypass $http_upgrade;
+}
+
+# Socket.IO 代理（用于实时通信）
+location /kf/socket.io/ {
+    proxy_pass http://127.0.0.1:3000/socket.io/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+
+
+
+# --------------------------------------------
+# 方式二：完整独立配置文件
+# --------------------------------------------
+
+# server {
+#     listen 80;
+#     server_name www.hbdxm.com;
+#     
+#     # 现有网站
+#     location / {
+#         root /www/wwwroot/hbdxm;
+#         index index.html index.htm;
+#         try_files $uri $uri/ /index.php?$query_string;
+#     }
+#     
+#     location /api {
+#         # 现有网站的 API
+#         proxy_pass http://127.0.0.1:8080;
+#     }
+#     
+#     # 客服系统前端
+#     location /kf/ {
+#         alias /www/wwwroot/kf/web/;
+#         try_files $uri $uri/ /kf/index.html;
+#     }
+#     
+#     # 客服系统后端 API
+#     location /kf/api/ {
+#         proxy_pass http://127.0.0.1:3000/;
+#         proxy_http_version 1.1;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#     }
+# }

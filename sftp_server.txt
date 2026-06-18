@@ -1,0 +1,6 @@
+lcd e:\kf\server
+cd /www/wwwroot
+mkdir -p kf/server
+cd kf/server
+put -r * .
+bye

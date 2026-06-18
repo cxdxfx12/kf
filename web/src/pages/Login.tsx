@@ -18,7 +18,7 @@ export default function Login() {
       const res = await api.post('/auth/login', values);
       login(res.data.token, res.data.user);
       message.success(`欢迎回来，${res.data.user.realName}`);
-      setTimeout(() => navigate('/dashboard'), 300);
+      setTimeout(() => navigate('/kf/dashboard'), 300);
     } catch (err: any) {
       message.error(err.response?.data?.error || '登录失败');
     } finally {
