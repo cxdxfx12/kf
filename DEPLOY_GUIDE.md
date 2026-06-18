@@ -61,7 +61,47 @@ location /kf/api/ {
 
 ---
 
-## 三、后端部署
+## 三、数据库配置
+
+客服系统支持两种数据库模式：
+
+### 方式一：JSON文件存储（默认，无需配置）
+
+系统默认使用 JSON 文件存储数据，无需安装 MySQL。
+- 数据存储位置：`/www/wwwroot/kf/server/data/db.json`
+- 自动创建，初始包含示例数据
+
+### 方式二：使用 MySQL（可选）
+
+如果您想使用 MySQL：
+
+```bash
+# 1. 连接 MySQL
+mysql -u root -p
+
+# 2. 创建数据库
+CREATE DATABASE kf_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE kf_db;
+
+# 3. 执行初始化脚本
+SOURCE /www/wwwroot/kf/server/sql/init_kf_db.sql;
+
+# 4. 退出 MySQL
+EXIT;
+```
+
+初始化脚本会自动创建以下表和初始数据：
+- `users` - 用户表（admin/agent1-6 默认密码：123456）
+- `customers` - 客户表
+- `orders` - 订单表
+- `tickets` - 工单表
+- `ticket_comments` - 工单评论表
+- `calls` - 通话记录表
+- `system_configs` - 系统配置表
+
+---
+
+## 四、后端部署
 
 SSH 连接到服务器，执行以下命令：
 
@@ -78,15 +118,16 @@ cat > .env << EOF
 NODE_ENV=production
 PORT=3000
 
-# 数据库配置（如果是共享数据库）
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=你的数据库用户
-DB_PASS=你的数据库密码
-DB_NAME=你的数据库名
+# JSON文件模式（默认）
+# 不需要配置数据库
 
-# 如果是独立数据库，创建新的
+# MySQL模式（可选，取消注释并修改）
+# DB_DIALECT=mysql
+# DB_HOST=localhost
+# DB_PORT=3306
 # DB_NAME=kf_db
+# DB_USER=你的数据库用户
+# DB_PASS=你的数据库密码
 
 # JWT 密钥
 JWT_SECRET=your_secret_key_change_this
@@ -97,26 +138,22 @@ AZURE_SPEECH_KEY=your_speech_key
 DASHSCOPE_API_KEY=your_dashscope_key
 EOF
 
-# 4. 初始化数据库（如果需要）
-# npm run seed
-# 或者运行数据库迁移脚本
-
-# 5. 安装 PM2 并启动
+# 4. 安装 PM2 并启动
 npm install -g pm2
 pm2 start index.js --name kf-server
 
-# 6. 设置开机自启
+# 5. 设置开机自启
 pm2 save
 pm2 startup
 
-# 7. 查看状态
+# 6. 查看状态
 pm2 status
 pm2 logs kf-server
 ```
 
 ---
 
-## 四、访问地址
+## 五、访问地址
 
 部署完成后，访问：
 ```
@@ -129,7 +166,7 @@ http://www.hbdxm.com/kf/
 
 ---
 
-## 五、故障排查
+## 六、故障排查
 
 ### 1. 前端 404 问题
 检查 Nginx 配置中的 `alias` 路径是否正确，确保 `/www/wwwroot/kf/web/` 目录存在且有文件。
@@ -157,7 +194,7 @@ CREATE DATABASE kf_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ---
 
-## 六、目录结构
+## 七、目录结构
 
 ```
 /www/wwwroot/
@@ -183,7 +220,7 @@ CREATE DATABASE kf_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ---
 
-## 七、常用命令
+## 八、常用命令
 
 ```bash
 # 重启后端服务
