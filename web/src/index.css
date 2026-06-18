@@ -1,0 +1,342 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; background: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }
+a { color: inherit; text-decoration: none; }
+
+@keyframes floatBg {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-30px, -30px) rotate(5deg); }
+}
+
+@keyframes pulseLight {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes wave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 40%, #237804 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.15), transparent 35%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), transparent 60%);
+  animation: floatBg 25s ease-in-out infinite;
+}
+
+.login-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: wave 3s linear infinite;
+}
+
+.login-card {
+  position: relative;
+  z-index: 2;
+  width: 460px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.6s ease-out;
+}
+
+.login-card:hover {
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: #1f1f1f;
+  letter-spacing: 1px;
+}
+
+.login-sub {
+  text-align: center;
+  color: #8c8c8c;
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+.app-layout {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.sider-logo {
+  height: 56px;
+  margin: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #1890ff, #096dd9);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+}
+
+.sider-logo:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+}
+
+.sider-logo .emoji {
+  font-size: 22px;
+  margin-right: 8px;
+}
+
+.app-logo {
+  height: 60px;
+  margin: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #52c41a, #389e0d);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.app-logo:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.app-header-left {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.app-content {
+  padding: 20px 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+.stat-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: none;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.stat-card .ant-statistic-title {
+  color: #8c8c8c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stat-card .ant-statistic-content {
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.stat-card .ant-statistic-content-prefix {
+  font-size: 24px;
+}
+
+.page-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.page-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #262626;
+}
+
+.soft-phone {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 320px;
+  z-index: 1000;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.4s ease;
+}
+
+.soft-phone-header {
+  background: linear-gradient(135deg, #52c41a, #389e0d);
+  color: #fff;
+  padding: 14px 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.soft-phone-body {
+  background: #fff;
+  padding: 16px;
+}
+
+.soft-phone-ringing {
+  background: linear-gradient(135deg, #ff4d4f, #cf1322);
+  animation: pulseLight 1s infinite;
+}
+
+.app-footer {
+  padding: 16px 24px;
+  text-align: center;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ant-menu-item {
+  border-radius: 8px;
+  margin: 2px 8px !important;
+}
+
+.ant-menu-item:hover {
+  background: rgba(82, 196, 26, 0.15) !important;
+}
+
+.ant-menu-item-selected {
+  background: rgba(82, 196, 26, 0.2) !important;
+  color: #52c41a !important;
+}
+
+.ant-btn-primary {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.ant-btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+}
+
+.ant-input {
+  border-radius: 8px;
+}
+
+.ant-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.ant-modal {
+  border-radius: 16px;
+}
+
+.ant-modal-header {
+  border-radius: 16px 16px 0 0;
+}
+
+.ant-modal-footer {
+  border-radius: 0 0 16px 16px;
+}
+
+.ant-drawer {
+  border-radius: 16px 0 0 16px;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-badge-count {
+  box-shadow: 0 0 0 2px #fff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
